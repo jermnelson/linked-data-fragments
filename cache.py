@@ -2,23 +2,47 @@ __author__ = "Jeremy Nelson, Aaron Coburn, Mark Matienzo"
 
 import asyncio
 import aioredis
+import hashlib
+try:
+    import config
+except ImportError:
+    config = {"redis": {"host": "localhost",
+                        "port": 6379,
+                        "ttl": 604800
+                        }}
+@asyncio.coroutine
+def add_get_key(resource):
+    redis = get_redis()    
+    sha1 = hashlib.sha1(str(resource).encode())
+    if not redis.exists(sha1):
+        redis.hset(sha1, "source", resource)
+    ttl = config.get("redis").get("ttl", 604800)
+    redis.expire(sha1, ttl)
+    return sha1
 
 @asyncio.coroutine
 def exists(key):
-    redis = yield from aioredis.create_redis(
-        ('localhost', 6379), loop=loop)
+    redis=get_redis()
     result = yield from redis.exists(key)
     redis.close()
     return result
 
 @asyncio.coroutine
-def set_subject(key, value):
-    redis = yield from aioredis.create_redis(
-        ('localhost', 6379), loop=loop)
-    # Sets a simple string key-value
-    yield from redis.set(key, value)
-    # Sets an expire for 1 week for volatile-lru, this value
-    # should be set in a config 
-    yield from redis.expire(key, 604800)
+def get_redis():
+    yield from aioredis.create_redis(
+        (config.get("redis")["host"], 
+         config.get("redis")["port"]), loop=loop)
+
+@asyncio.coroutine
+def get_triple(subject_key=None, predicate_key=None, object_key=None):
+    redis = get_redis()
+    pattern = str()
+    for key in [subject_key, predicate_key, object_key]:
+        if key is None:
+            pattern += "*"
+        else:
+            pattern += "{}".format(key)
+    pattern = pattern[:-1]
+    yield from redis.scan(pattern)
     redis.close()
 
