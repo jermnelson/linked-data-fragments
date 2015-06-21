@@ -11,9 +11,8 @@ except ImportError:
                         "ttl": 604800
                         }}
 @asyncio.coroutine
-def add_get_key(resource):
+def add_get_key(resource_hash, resource_str):
     redis = get_redis()    
-    sha1 = hashlib.sha1(str(resource).encode())
     if not redis.exists(sha1):
         redis.hset(sha1, "source", resource)
     ttl = config.get("redis").get("ttl", 604800)
@@ -32,6 +31,16 @@ def get_redis():
     yield from aioredis.create_redis(
         (config.get("redis")["host"], 
          config.get("redis")["port"]), loop=loop)
+
+@asyncio.coroutine
+def expand_namepace(resource):
+    redis = get_redis()
+    namespace_str, value = str(resource).split(":")
+    url = yield from redis.hget("namespaces", namespace_str)
+    if url:
+        namespace = rdflib.Namespace(url)
+        yield from getattr(namespace, value)  
+    
 
 @asyncio.coroutine
 def get_triple(subject_key=None, predicate_key=None, object_key=None):

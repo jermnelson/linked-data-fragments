@@ -2,22 +2,24 @@ __author__ = "Jeremy Nelson, Aaron Coburn, Mark Matienzo"
 
 import asyncio
 import cache
+import rdflib
 import shlex
 
+
+
+
 @asyncio.coroutine
-def get_subject(value):
-    """Coroutine attempts to retrieve the subject from cache,
-    if not present in cache, attempts to retrieve subject with a
-    SPARQL query.
+def check_add(resource):
+    """Coroutine attempts to retrieve the  from cache,
+    if not present in cache, attempts to retrieve the sha1
+    hashed value from the cache, otherwise adds the subject
+    to the cache with the serialized value. 
 
     Args:
         value -- Subject value
     """
-    subject = yield from cache.exists(value)
-    if subject is None:
-        subject = yield from sparql_subject(value)  
-        yield from cache.set_subject(value, subject)
-    return subject
+    rHash = cache.add_get_key(resouce)
+    return rHash 
 
 @asyncio.coroutine
 def sparql_subject(value):
@@ -39,6 +41,7 @@ class LinkedDataFragmentsServer(asyncio.Protocol):
         Args:
             data -- ?
         """
+        print(data, type(data))
         self.transport.write("{}".format("Response").encode())
         self.transport.close()
 
