@@ -13,11 +13,11 @@ except ImportError:
 @asyncio.coroutine
 def add_get_key(resource_hash, resource_str):
     redis = get_redis()    
-    if not redis.exists(sha1):
-        redis.hset(sha1, "source", resource)
+    if not redis.exists(resource_hash):
+        redis.hset(resource_hash, "source", resource_str)
     ttl = config.get("redis").get("ttl", 604800)
-    redis.expire(sha1, ttl)
-    return sha1
+    redis.expire(resource_hash, ttl)
+    return resource_hash
 
 @asyncio.coroutine
 def exists(key):
