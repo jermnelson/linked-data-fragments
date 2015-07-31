@@ -6,11 +6,10 @@ import rdflib
 import shlex
 
 
-
-
 @asyncio.coroutine
 def check_add(resource):
-    """Coroutine attempts to retrieve the  from cache,
+    """Coroutine attempts to retrieve an URL or Literal
+    value from cache,
     if not present in cache, attempts to retrieve the sha1
     hashed value from the cache, otherwise adds the subject
     to the cache with the serialized value. 

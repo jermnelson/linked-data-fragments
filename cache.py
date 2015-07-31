@@ -3,6 +3,7 @@ __author__ = "Jeremy Nelson, Aaron Coburn, Mark Matienzo"
 import asyncio
 import aioredis
 import hashlib
+import os
 try:
     import config
 except ImportError:
@@ -10,37 +11,30 @@ except ImportError:
                         "port": 6379,
                         "ttl": 604800
                         }}
-@asyncio.coroutine
-def add_get_key(resource_hash, resource_str):
-    redis = get_redis()    
-    if not redis.exists(resource_hash):
-        redis.hset(resource_hash, "source", resource_str)
-    ttl = config.get("redis").get("ttl", 604800)
-    redis.expire(resource_hash, ttl)
-    return resource_hash
+
+LUA_SCRIPTS ={}
 
 @asyncio.coroutine
-def exists(key):
-    redis=get_redis()
-    result = yield from redis.exists(key)
+def get_digest(value):
+    """Get digest takes either an URI/URL or a Literal value and 
+    calls the SHA1 for the add_get_hash.lua script.
+
+    Args:
+       value -- URI/URL or Literal value
+    """
+    redis = get_redis()
+    yield from redis.execsha(LUA_SCRIPTS['add_get_hash.lua'], 
+                             1, 
+                             value,
+                             config.get("redis").get('ttl'))
     redis.close()
-    return result
+    
 
 @asyncio.coroutine
 def get_redis():
     yield from aioredis.create_redis(
         (config.get("redis")["host"], 
          config.get("redis")["port"]), loop=loop)
-
-@asyncio.coroutine
-def expand_namepace(resource):
-    redis = get_redis()
-    namespace_str, value = str(resource).split(":")
-    url = yield from redis.hget("namespaces", namespace_str)
-    if url:
-        namespace = rdflib.Namespace(url)
-        yield from getattr(namespace, value)  
-    
 
 @asyncio.coroutine
 def get_triple(subject_key=None, predicate_key=None, object_key=None):
@@ -55,3 +49,18 @@ def get_triple(subject_key=None, predicate_key=None, object_key=None):
     yield from redis.scan(pattern)
     redis.close()
 
+def server_setup():
+    base_dir = os.path.dirname(os.path.abspath(__name__))
+    redis_dir = os.path.join(base_dir, "redis")
+    import redis
+    cache = redis.StrictRedis(host=config.get('redis').get('host'),
+                              port=config.get('redis').get('port'))
+    for name in ["add_get_hash.lua", "triple_pattern_search.lua"]:
+        filepath = os.path.join(redis_dir, name)
+        with open(filepath) as fo:
+            lua_script = fo.read()
+        sha1 = cache.script_load(lua_script)
+        LUA_SCRIPTS[name] = sha1   
+
+server_setup()
+print(LUA_SCRIPTS)
