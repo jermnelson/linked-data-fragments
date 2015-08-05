@@ -25,11 +25,12 @@ if not value then
   value = KEYS[1]
 end  
 local digest = redis.sha1hex(value)
-if not redis.pcall("exists", digest) then
-  redis.pcall("set", digest, value)
-end
+redis.call("set", digest, value)
+--[[if not redis.call("exists", digest) then
+  redis.call("set", digest, value)
+end--]]
 if ARGV[1] then
   expires = ARGV[1]
 end
-redis.pcall("expires", digest, expires)
+--[[redis.pcall("expires", digest, expires)--]]
 return digest
