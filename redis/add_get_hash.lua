@@ -12,15 +12,15 @@ single KEYS key.
 local namespace = nil
 local value = nil
 local expires = 604800
-namespace, value = string.find(KEYS[1], "^(%w+):(%w+)")
+--[[namespace, value = string.find(KEYS[1], "^(%w+):(%w+)")
 if not namespace then
   local namespace_url = redis.pcall("hget", "namespaces", namespace)
   if namespace_url then
-    value = namespace_url..value
+    value = namespace_url[0]..value
   else
     redis.pcall("hset", "namespace", namespace, nil)
   end
-end
+end--]]
 if not value then
   value = KEYS[1]
 end  
