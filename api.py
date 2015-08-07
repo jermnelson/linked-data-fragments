@@ -6,13 +6,13 @@ import redis
 import rdflib
 
 try:
-    import config
+    from config import config
 except ImportError:
     config = {"debug": True,
               "redis": {"host": "localhost",
 		        "port": 6379,
 		        "ttl": 604800},
-              "rest-api": {"host": "localhost",
+              "rest_api": {"host": "localhost",
                            "port": 18150},
               # Blazegraph SPARQL Endpoint
               "triplestore": {"host": "localhost",
@@ -73,18 +73,19 @@ def triple_key(req, resp, params):
 class Triple:
 
     def __init__(self, **kwargs):
-        self.triplestore_url = kwargs.get(
-            "triplestore_url",
+        self.triplestore_url = kwargs.get("triplestore_url", None)
+        if not self.triplestore_url:
             self.triplestore_url = "{}:{}/{}".format(
                 config.get('triplestore').get('host'),
-                config.get('triplestore').get('port')))
+                config.get('triplestore').get('port'),
+                config.get('triplestore').get('path'))
 
     @falcon.before(triple_key)
     def on_get(self, req, resp):
         if not resp.body:
             # Should search SPARQL endpoint and add to cache
             # if found
-            result = requests.post(self.triplestore_url
+            result = requests.post(self.triplestore_url,
                 data={"query": TRIPLE_SPARQL.format(req.args.get('s'),
                                                     req.args.get('p'),
                                                     req.args.get('o')),
@@ -93,9 +94,10 @@ class Triple:
                 bindings = result.get('results').get('bindings')
                 if len(bindings) > 0:
                     for binding in bindings:
+                        print(binding)
                         
-                    
-            raise falcon.HTTPNotFound()
+            else:        
+                raise falcon.HTTPNotFound()
         resp.status = falcon.HTTP_200        
             
    
@@ -108,7 +110,9 @@ class Triple:
     @falcon.before(triple_key)          
     def on_post(self, req, resp):
         if resp.body:
-            
+            print(resp.body)
+        else:
+            raise falcon.HTTPInvalidRequest()    
         resp.status = falcon.HTTP_201     
 
 triple = Triple()
@@ -121,8 +125,8 @@ if __name__ == '__main__':
     if config.get('debug'):
         from werkzeug.serving import run_simple
         run_simple(
-            config.get('rest-api').get('host'),
-            config.get('rest-api').get('port'),
+            config.get('rest_api').get('host'),
+            config.get('rest_api').get('port'),
             rest,
             use_reloader=True)
     else:
