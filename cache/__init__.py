@@ -30,7 +30,7 @@ class Cache(object):
             sha1 = self.cache.script_load(lua_script)
             setattr(self, name, sha1)
 
-    def triple_search(self, subject, predicate, object_):
+    def triple_search(self, subject=None, predicate=None, object_=None):
         triple_str = self.cache.evalsha(
             self.add_get_triple,
             3,

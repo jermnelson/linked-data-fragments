@@ -8,6 +8,7 @@ try:
     from config import config
 except ImportError:
     config = {"debug": True,
+              "cache": "Cache",
               "redis": {"host": "localhost",
 		        "port": 6379,
 		        "ttl": 604800},
@@ -20,23 +21,15 @@ except ImportError:
               
     }
 
-CACHE = redis.StrictRedis(host=config.get('redis').get('host'),
-                          port=config.get('redis').get('port'))
-LUA_SCRIPTS ={}
-
-def server_setup():
-    base_dir = os.path.dirname(os.path.abspath(__name__))
-    redis_dir = os.path.join(base_dir, "redis")
-    for name in ["add_get_hash", 
-                 "add_get_triple",
-                 "triple_pattern_search"]:
-        filepath = os.path.join(redis_dir, "{}.lua".format(name))
-        with open(filepath) as fo:
-            lua_script = fo.read()
-        sha1 = CACHE.script_load(lua_script)
-        LUA_SCRIPTS[name] = sha1   
-
-server_setup()
+if config['cache'].startswith("TwemproxyCache"):
+    from cache.twemproxy import TwemproxyCache
+    CACHE = TwemproxyCache(**config)
+elif config['cache'].startswith("ClusterCache"):
+    from cache.cluster import ClusterCache
+    CACHE = ClusterCache(**config)
+else:
+    from cache import Cache
+    CACHE = Cache(**config)
 
 rest = falcon.API()
 
