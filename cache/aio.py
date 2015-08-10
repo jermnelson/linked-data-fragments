@@ -49,18 +49,5 @@ def get_triple(subject_key=None, predicate_key=None, object_key=None):
     yield from redis.scan(pattern)
     redis.close()
 
-def server_setup():
-    base_dir = os.path.dirname(os.path.abspath(__name__))
-    redis_dir = os.path.join(base_dir, "redis")
-    import redis
-    cache = redis.StrictRedis(host=config.get('redis').get('host'),
-                              port=config.get('redis').get('port'))
-    for name in ["add_get_hash.lua", "triple_pattern_search.lua"]:
-        filepath = os.path.join(redis_dir, name)
-        with open(filepath) as fo:
-            lua_script = fo.read()
-        sha1 = cache.script_load(lua_script)
-        LUA_SCRIPTS[name] = sha1   
 
-server_setup()
 print(LUA_SCRIPTS)
