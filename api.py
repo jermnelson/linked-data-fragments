@@ -2,7 +2,6 @@ __author__ = "Jeremy Nelson"
 
 import falcon
 import os
-import redis
 import rdflib
 
 try:
@@ -41,11 +40,6 @@ server_setup()
 
 rest = falcon.API()
 
-# SPARQL statements
-TRIPLE_SPARQL = """SELECT DISTINCT *
-WHERE {{{{
-  {} {} {} . 
-}}}}"""
 
 # Hooks
 def triple_key(req, resp, params):
