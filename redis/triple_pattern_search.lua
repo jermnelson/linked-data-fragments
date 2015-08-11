@@ -13,7 +13,7 @@ local cursor = ARGV[1]
 if not cursor then
   cursor = 0
 end
-cursor, result = redis.pcall("scan", cursor, "match="..KEYS[1]) 
+cursor, result = redis.pcall("scan", cursor, "match="..KEYS[1], "count=100") 
 for i,key_digest in ipairs(result) do
   --[[Should preprocess result from get call to support namespaces --]] 
   output[i] = redis.pcall("get", key_digest)
