@@ -4,9 +4,10 @@ add_get_triple
 This script is licensed under the GNU Affero version 3. Copyrighted
 2015 by Jeremy Nelson <jermnelson@gmail.com>--]]
 local function add(digest, value)  
-  if not redis.pcall("exists", digest) then 
-     redis.set(digest, value)      
-  end
+  --[[if not redis.pcall("exists", digest) then 
+     redis.pcall('set', digest, value)      
+  end--]]
+  redis.pcall('set', digest, value)
 end
 
 local subject_sha1 = redis.sha1hex(KEYS[1])
