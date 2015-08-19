@@ -1,9 +1,12 @@
 __author__ = "Jeremy Nelson"
 
-import json
+
+import digests 
 import falcon
+import json
 import os
 import rdflib
+
 
 try:
     from config import config
@@ -32,6 +35,7 @@ else:
     from cache import Cache
     CACHE = Cache(**config)
 
+
 rest = falcon.API()
 
 
@@ -58,6 +62,66 @@ def triple_key(req, resp, params):
             )
         else:
             raise falcon.HTTPNotFound()
+
+def get_triples(pattern):
+    cursor = -1
+    output = []
+    iterations = 0
+    while 1:
+        iterations += 1
+        if cursor == 0:
+            break
+        elif cursor < 0:
+            cursor = 0
+        cursor, resources = CACHE.datastore.scan(
+	    cursor=cursor,
+	    match=pattern,
+	    count=1000)
+        cursor = int(cursor)
+        if len(resources) > 0:
+            output.extend(resources)
+    return output
+
+
+def get_types(type_uri):
+    """Function takes a type uri and returns all triple keys that
+    matches that RDF type for that uri.
+
+    Args:
+        type_uri -- URI to search for
+
+    Returns:
+        A list of all triples that match the RDF type of the
+        type_uri 
+    """
+    pattern = "*:{}:{}".format(digests.RDF.get(str(rdflib.RDF.type)),
+                               digests.get_sha1_digest(type_uri))
+    return get_triples(pattern)
+
+
+def get_graph(pattern):
+    graph = rdflib.Graph()
+    transaction = CACHE.datastore.pipeline(transaction=True)
+    for key in get_triples(pattern):
+        transaction.get(key)
+    json_triples = transaction.execute()
+        
+
+def get_subject_graph(subject):
+    """Function takes a subject URI and scans through cache for all
+    triples matching the subject
+
+    Args:
+        subject -- subject URI
+ 
+    Returns:
+        rdflib.Graph made up all triples
+    """
+    
+    pattern = "{}:*:*".format(digests.get_sha1_digest(subject))
+    transaction = CACHE.datastore.pipeline
+    for key in get_triples(pattern): 
+    
  
 class Triple:
 
