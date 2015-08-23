@@ -1,8 +1,25 @@
 __author__ = "Jeremy Nelson"
 
 import json
+import hashlib
 import os
 import redis
+
+def add_triple(datastore, subject, predicate, object_):
+    subject_sha1 = hashlib.sha1(subject.encode()).hexdigest()
+    predicate_sha1 = hashlib.sha1(predicate.encode()).hexdigest()
+    object_sha1 = hashlib.sha1(object_.encode()).hexdigest()
+    transaction = datastore.pipeline(transaction=True)
+    transaction.set(subject_sha1, subject)
+    transaction.set(predicate_sha1, predicate)
+    transaction.set(object_sha1, object_)
+    transaction.set("{}:{}:{}".format(
+        subject_sha1.decode(),
+        predicate_sha1.decode(),
+        object_sha1.decode()),
+        1)
+    transaction.execute()
+
 
 # SPARQL statements
 TRIPLE_SPARQL = """SELECT DISTINCT *

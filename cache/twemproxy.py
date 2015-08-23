@@ -1,6 +1,7 @@
 __author__ = "Jeremy Nelson"
 
 import redis
+import socket
 from . import Cache
 
 class TwemproxyCache(Cache):
