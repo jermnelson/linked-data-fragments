@@ -1,9 +1,29 @@
 __author__ = "Jeremy Nelson, Aaron Coburn, Mark Matienzo"
 
+import argparse
 import asyncio
-import cache
+from aiohttp import web
+import cache.aio as cache
 import rdflib
 import shlex
+
+try:
+    from config import config
+except ImportError:
+    config = {"debug": True,
+              "cache": "Cache",
+              "host": "0.0.0.0",
+              "port": 7000,
+              "redis": {"host": "localhost",
+		        "port": 6379,
+		        "ttl": 604800},
+             # Blazegraph SPARQL Endpoint
+              "triplestore": {"host": "localhost",
+                              "port": 8080,
+                              "path": "bigdata"},
+             
+              
+    }
 
 
 @asyncio.coroutine
@@ -20,6 +40,37 @@ def check_add(resource):
     rHash = cache.add_get_key(resouce)
     return rHash 
 
+@asyncio.coroutine
+def handle_triple(request):
+    subject_key = yield from cache.get_digest(request.match_info.get('s'))
+    predicate_key = yield from cache.get_digest(request.match_info.get('p'))
+    object_key = yield from cache.get_digest(request.match_info.get('o'))
+    yield from cache.get_triple(subject_key, predicate_key, object_key)
+
+@asyncio.coroutine
+def init_http_server(loop):
+    app = web.Application(loop=loop)
+    app.router.add_route('GET', '/', handle_triple)
+    server = yield from loop.create_server(app.make_handler(),
+                                           config.get('host'), 
+                                           config.get('port'))
+    if config.get('debug'):
+        print("Running HTTP Server at {} {}".format(config.get('host'), 
+                                                    config.get('port')))
+    return server
+ 
+                                      
+@asyncio.coroutine
+def init_socket_server(loop):
+    server = yield from loop.create_server(LinkedDataFragmentsServer, 
+                                           config.get('port'), 
+                                           config.get(7000))
+    if config.get('debug'):
+        print("Running Socket Server at {} {}".format(config.get('port'), 
+                                                      config.get(7000)))
+    return server
+
+    
 @asyncio.coroutine
 def sparql_subject(value):
     return "Need SPARQL query"
@@ -46,11 +97,18 @@ class LinkedDataFragmentsServer(asyncio.Protocol):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'action',
+        choices=['socket', 'http'],
+        default='http',
+        help='Run server as either: socket, http, default is http')
+    args = parser.parse_args()
     loop = asyncio.get_event_loop()
-    coro = loop.create_server(LinkedDataFragmentsServer, '0.0.0.0', 9000)
-    server = loop.run_until_complete(coro)
-    print("Linked-data Fragments Server running on {}".format(
-        server.sockets[0].getsockname()))
+    if args.action.lower().startswith('socket'):
+        server = loop.run_until_complete(init_socket_server(loop))
+    elif args.action.lower().startswith('http'):
+        server = loop.run_until_complete(init_http_server(loop)) 
     try:
         loop.run_forever()
     finally:
