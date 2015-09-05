@@ -22,7 +22,12 @@ def get_digest(value):
     Args:
        value -- URI/URL or Literal value
     """
-    redis = get_redis()
+    #redis = get_redis()
+    redis = yield from aioredis.create_redis(
+        (config.get("redis")["host"], 
+         config.get("redis")["port"]), loop=loop)
+
+
     yield from redis.execsha(LUA_SCRIPTS['add_get_hash.lua'], 
                              1, 
                              value,

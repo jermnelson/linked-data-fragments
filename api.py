@@ -121,7 +121,7 @@ def get_subject_graph(subject):
     pattern = "{}:*:*".format(digests.get_sha1_digest(subject))
     transaction = CACHE.datastore.pipeline
     for key in get_triples(pattern): 
-    
+        pass 
  
 class Triple:
 
