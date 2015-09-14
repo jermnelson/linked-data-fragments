@@ -14,9 +14,9 @@ def add_triple(datastore, subject, predicate, object_):
     transaction.set(predicate_sha1, predicate)
     transaction.set(object_sha1, object_)
     transaction.set("{}:{}:{}".format(
-        subject_sha1.decode(),
-        predicate_sha1.decode(),
-        object_sha1.decode()),
+        subject_sha1,
+        predicate_sha1,
+        object_sha1),
         1)
     transaction.execute()
 
