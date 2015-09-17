@@ -51,7 +51,7 @@ def get_triple(subject_key=None, predicate_key=None, object_key=None):
         else:
             pattern += "{}".format(key)
     pattern = pattern[:-1]
-    yield from redis.scan(pattern)
+    yield from redis.keys(pattern)
     redis.close()
 
 

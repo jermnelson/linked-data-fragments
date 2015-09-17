@@ -55,7 +55,14 @@ def triple_key(req, resp, params):
             pred,
             obj)
         if triple_str and CACHE.datastore.exists(triple_str):
-            resp.body = json.dumps(CACHE.datastore.get(triple_str))
+            triple_key = triple_str.decode()
+            triple_digests = triple_key.split(":")
+            resp.body = json.dumps(
+                {"key": triple_str.decode(),
+                 "subject_sha1": triple_digests[0],
+                 "predicate_sha1": triple_digests[1],
+                 "object_sha1": triple_digests[2]}
+            )
         elif triple_str:
             resp.body = json.dumps(
                 {"missing-triple-key": triple_str.decode()}
