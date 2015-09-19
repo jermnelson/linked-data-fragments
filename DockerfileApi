@@ -1,0 +1,7 @@
+# This Dockerfile run the Falcon based API
+FROM jermnelson/ldfs-base
+MAINTAINER Jeremy Nelson <jermnelson@gmail.com>
+
+EXPOSE 18150
+WORKDIR $LDFS_HOME
+#ENTRYPOINT ['python api.py']

@@ -193,7 +193,6 @@ rest.add_route("/", triple)
 #rest.add_route('/{subj}:{pred}:{obj}', triple)
 
 if __name__ == '__main__':
-    print("Add_get_triple = {}".format(CACHE.add_get_triple))
     if config.get('debug'):
         from werkzeug.serving import run_simple
         run_simple(
