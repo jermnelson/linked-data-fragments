@@ -21,4 +21,4 @@ class ClusterCache(Cache):
         triple_str = "{}:{}:{}".format(
             self.__get_sha1__(subject), 
             self.__get_sha1__(predicate),
-            self.__get_sha1__(
+            self.__get_sha1__(object_))
