@@ -3,10 +3,11 @@ __author__ = "Jeremy Nelson"
 
 import digests 
 import falcon
+import hashlib
 import json
 import os
 import rdflib
-
+import requests
 
 try:
     from config import config
@@ -69,6 +70,16 @@ def triple_key(req, resp, params):
             )
         else:
             raise falcon.HTTPNotFound()
+    # Subject search
+    if subj and not pred and not obj:
+        pattern = "{}:*:*".format(hashlib.sha1(str(subj).encode()).hexdigest())
+        output = {"subject": str(subj),
+                  "predicate-objects": []}
+        for triple_key in CACHE.datastore.keys(pattern):
+            triples = triple_key.decode().split(":")
+            output["predicate-objects"].append({"p": CACHE.datastore.get(triples[1]).decode(),
+                                                "o": CACHE.datastore.get(triples[-1]).decode()})
+        resp.body = json.dumps(output)
 
 def get_triples(pattern):
     cursor = -1
