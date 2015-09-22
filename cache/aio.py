@@ -29,10 +29,12 @@ def get_digest(value):
          config.get("redis")["port"]), loop=loop)
 
 
-    yield from redis.execsha(LUA_SCRIPTS['add_get_hash.lua'], 
-                             1, 
-                             value,
-                             config.get("redis").get('ttl'))
+    yield from redis.connection.execute(
+        b'EXECSHA',
+        LUA_SCRIPTS['add_get_hash.lua'], 
+        1, 
+        value,
+        config.get("redis").get('ttl'))
     redis.close()
     
 
