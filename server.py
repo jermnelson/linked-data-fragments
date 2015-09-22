@@ -42,10 +42,18 @@ def check_add(resource):
 
 @asyncio.coroutine
 def handle_triple(request):
-    subject_key = yield from cache.get_digest(request.match_info.get('s'))
-    predicate_key = yield from cache.get_digest(request.match_info.get('p'))
-    object_key = yield from cache.get_digest(request.match_info.get('o'))
-    yield from cache.get_triple(subject_key, predicate_key, object_key)
+    if request.method.startswith('POST'):
+        data = request.POST
+    elif request.method.startswith('GET'):
+        data = request.GET
+    else:
+        data = {}
+    subject_key = yield from cache.get_digest(data.get('s'))
+    print("Data={} Subject key={}".format(data.get('s'), subject_key))
+    predicate_key = yield from cache.get_digest(data.get('p'))
+    object_key = yield from cache.get_digest(data.get('o'))
+    result = yield from cache.get_triple(subject_key, predicate_key, object_key)
+    print(result)
 
 @asyncio.coroutine
 def init_http_server(loop):

@@ -25,8 +25,8 @@ for name in ["add_get_hash",
 	LUA_LOCATION, "{}.lua".format(name))
     with open(filepath) as fo:
         lua_script = fo.read()
-    sha1 = self.datastore.script_load(lua_script)
-    LUA_SCRIPT[name] = sha1
+    sha1 = DATASTORE.script_load(lua_script)
+    LUA_SCRIPTS[name] = sha1
 
 @asyncio.coroutine
 def get_digest(value):
@@ -36,16 +36,16 @@ def get_digest(value):
     Args:
        value -- URI/URL or Literal value
     """
-    #redis = get_redis()
+    print("Value is {}".format(value))
+    if not value:
+        return None
     loop = asyncio.get_event_loop()
     redis = yield from aioredis.create_redis(
         (config.get("redis")["host"], 
          config.get("redis")["port"]), loop=loop)
-
-
     yield from redis.connection.execute(
-        b'EXECSHA',
-        LUA_SCRIPTS['add_get_hash.lua'], 
+        b'EVALSHA',
+        LUA_SCRIPTS['add_get_hash'], 
         1, 
         value,
         config.get("redis").get('ttl'))
@@ -59,14 +59,18 @@ def get_redis():
          config.get("redis")["port"]), loop=loop)
 
 @asyncio.coroutine
-def get_triple(subject_key=None, predicate_key=None, object_key=None):
-    redis = get_redis()
+def get_triple(subject_key, predicate_key, object_key):
+    loop = asyncio.get_event_loop()
+    redis_instance = yield from aioredis.create_redis(
+        (config.get("redis")["host"], 
+         config.get("redis")["port"]), loop=loop)
     pattern = str()
     for key in [subject_key, predicate_key, object_key]:
         if key is None:
-            pattern += "*"
+            pattern += "*:"
         else:
-            pattern += "{}".format(key)
+            pattern += "{}:".format(key)
     pattern = pattern[:-1]
-    yield from redis.keys(pattern)
-    redis.close()
+    results = yield from redis_instance.scan(0, pattern)
+    print(results)
+    redis_instance.close()
