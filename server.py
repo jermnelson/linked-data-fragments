@@ -49,11 +49,20 @@ def handle_triple(request):
     else:
         data = {}
     subject_key = yield from cache.get_digest(data.get('s'))
-    print("Data={} Subject key={}".format(data.get('s'), subject_key))
     predicate_key = yield from cache.get_digest(data.get('p'))
     object_key = yield from cache.get_digest(data.get('o'))
     result = yield from cache.get_triple(subject_key, predicate_key, object_key)
-    print(result)
+    output = {"subject": data.get('s'),
+              "predicate-objects": []}
+
+    for triple_key in result:
+        print(triple_key)
+        triples = triple_key.decode().split(":")
+        output["predicate-objects"].append(
+            {"p": CACHE.datastore.get(triples[1]).decode(),
+             "o": CACHE.datastore.get(triples[-1]).decode()})
+    return web.Response.json(body=json.dumps(output).encode())
+
 
 @asyncio.coroutine
 def init_http_server(loop):

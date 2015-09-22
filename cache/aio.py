@@ -43,12 +43,13 @@ def get_digest(value):
     redis = yield from aioredis.create_redis(
         (config.get("redis")["host"], 
          config.get("redis")["port"]), loop=loop)
-    yield from redis.connection.execute(
+    sha1_digest = yield from redis.connection.execute(
         b'EVALSHA',
         LUA_SCRIPTS['add_get_hash'], 
         1, 
         value,
         config.get("redis").get('ttl'))
+    return sha1_digest
     redis.close()
     
 
@@ -69,8 +70,11 @@ def get_triple(subject_key, predicate_key, object_key):
         if key is None:
             pattern += "*:"
         else:
-            pattern += "{}:".format(key)
+            pattern += "{}:".format(key.decode())
     pattern = pattern[:-1]
-    results = yield from redis_instance.scan(0, pattern)
+    if pattern.startswith("*:*:*"):
+        results = yield from redis_instance.scan(0, pattern)
+    else:
+        results = yield from redis_instance.keys(pattern)
     print(results)
     redis_instance.close()
