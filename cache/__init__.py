@@ -41,7 +41,7 @@ class Cache(object):
         lua_location = kwargs.get('lua_location', None) 
         if not lua_location:
             base_dir = os.path.dirname(os.path.abspath(__name__))
-            lua_location = os.path.join(base_dir, "redis")
+            lua_location = os.path.join(base_dir, "redis_lib")
         for name in ["add_get_hash", 
                      "add_get_triple",
                      "triple_pattern_search"]:
