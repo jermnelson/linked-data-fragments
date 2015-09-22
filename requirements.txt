@@ -2,4 +2,5 @@ aioredis
 aiohttp
 falcon
 rdflib
+redis
 requests
