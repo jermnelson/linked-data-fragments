@@ -22,7 +22,7 @@ for name in ["add_get_hash",
 	     "add_get_triple",
 	     "triple_pattern_search"]:
     filepath = os.path.join(
-	lua_location, "{}.lua".format(name))
+	LUA_LOCATION, "{}.lua".format(name))
     with open(filepath) as fo:
         lua_script = fo.read()
     sha1 = self.datastore.script_load(lua_script)
