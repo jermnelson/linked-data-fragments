@@ -1,0 +1,10 @@
+ldfs:
+  build: .
+  links:
+  - redis
+redis:
+  images: redis
+  ports:
+  - "6379:6379"
+  volumes:
+  - "/opt/ldfs/data:/data"
