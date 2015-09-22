@@ -48,7 +48,7 @@ class Cache(object):
             sha1 = self.datastore.script_load(lua_script)
             setattr(self, name, sha1)
 
-    def self.__get_sha1__(self, entity):
+    def __get_sha1__(self, entity):
         return hashlib.sha1(entity.encode()).hexdigest()
 
     def triple_search(self, subject=None, predicate=None, object_=None):
