@@ -20,7 +20,8 @@ RUN git clone https://github.com/jermnelson/linked-data-fragments.git $LDFS_HOME
     && git checkout -b development \
     && git pull origin development \
     && pip3 install -r requirements.txt \
-    && cp docker_config.py config.py 
+    && cp docker_config.py config.py \
+    && touch __init__.py 
    
 WORKDIR $LDFS_HOME
 
