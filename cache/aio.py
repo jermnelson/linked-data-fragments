@@ -23,6 +23,7 @@ def get_digest(value):
        value -- URI/URL or Literal value
     """
     #redis = get_redis()
+    loop = asyncio.get_event_loop()
     redis = yield from aioredis.create_redis(
         (config.get("redis")["host"], 
          config.get("redis")["port"]), loop=loop)
