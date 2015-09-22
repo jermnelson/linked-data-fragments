@@ -4,4 +4,5 @@ MAINTAINER Jeremy Nelson <jermnelson@gmail.com>
 
 EXPOSE 18150
 WORKDIR $LDFS_HOME
+CMD ['python', 'api.py']
 #ENTRYPOINT ['python api.py']

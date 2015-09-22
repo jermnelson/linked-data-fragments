@@ -31,8 +31,12 @@ class Cache(object):
 
     def __init__(self, **kwargs):
         self.lua_scripts = dict()
-        self.datastore = kwargs.get('datastore', None) 
-        if not self.datastore:
+        redis_config = kwargs.get('redis', None) 
+        if redis_config:
+            self.datastore = redis.StrictRedis(
+                host=redis_config.get('host'),
+                port=redis_config.get('port'))
+        else:
             self.datastore = redis.StrictRedis()
         lua_location = kwargs.get('lua_location', None) 
         if not lua_location:
