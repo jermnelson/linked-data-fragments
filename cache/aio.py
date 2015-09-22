@@ -4,6 +4,7 @@ import asyncio
 import aioredis
 import hashlib
 import os
+import redis
 try:
     import config
 except ImportError:
@@ -13,6 +14,19 @@ except ImportError:
                         }}
 
 LUA_SCRIPTS ={}
+BASE_DIR = os.path.dirname(os.path.abspath(__name__))
+LUA_LOCATION = os.path.join(base_dir, "redis")
+DATASTORE = redis.StrictRedis(host=config.get("redis")["host"],
+                              port=config.get("redis")["port"])
+for name in ["add_get_hash", 
+	     "add_get_triple",
+	     "triple_pattern_search"]:
+    filepath = os.path.join(
+	lua_location, "{}.lua".format(name))
+    with open(filepath) as fo:
+	lua_script = fo.read()
+    sha1 = self.datastore.script_load(lua_script)
+    LUA_SCRIPT[name] = sha1
 
 @asyncio.coroutine
 def get_digest(value):
@@ -56,6 +70,3 @@ def get_triple(subject_key=None, predicate_key=None, object_key=None):
     pattern = pattern[:-1]
     yield from redis.keys(pattern)
     redis.close()
-
-
-print(LUA_SCRIPTS)
