@@ -4,6 +4,7 @@ import argparse
 import asyncio
 from aiohttp import web
 import cache.aio as cache
+import json
 import rdflib
 import shlex
 
@@ -56,12 +57,14 @@ def handle_triple(request):
               "predicate-objects": []}
 
     for triple_key in result:
-        print(triple_key)
         triples = triple_key.decode().split(":")
+        predicate = yield from cache.get_value(triples[1]) 
+        object_ = yield from cache.get_value(triples[-1])
         output["predicate-objects"].append(
-            {"p": CACHE.datastore.get(triples[1]).decode(),
-             "o": CACHE.datastore.get(triples[-1]).decode()})
-    return web.Response.json(body=json.dumps(output).encode())
+            {"p": predicate,
+             "o": object_})
+    return web.Response(body=json.dumps(output).encode(),
+                        content_type="application/json")
 
 
 @asyncio.coroutine

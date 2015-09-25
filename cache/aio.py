@@ -36,45 +36,53 @@ def get_digest(value):
     Args:
        value -- URI/URL or Literal value
     """
-    print("Value is {}".format(value))
     if not value:
         return None
-    loop = asyncio.get_event_loop()
-    redis = yield from aioredis.create_redis(
-        (config.get("redis")["host"], 
-         config.get("redis")["port"]), loop=loop)
-    sha1_digest = yield from redis.connection.execute(
+    connection = yield from aioredis.create_connection(
+       (config.get("redis")["host"], 
+        config.get("redis")["port"]),
+       encoding='utf-8')
+    sha1_digest = yield from connection.execute(
         b'EVALSHA',
         LUA_SCRIPTS['add_get_hash'], 
         1, 
         value,
         config.get("redis").get('ttl'))
+    connection.close()
     return sha1_digest
-    redis.close()
     
 
 @asyncio.coroutine
-def get_redis():
-    yield from aioredis.create_redis(
-        (config.get("redis")["host"], 
-         config.get("redis")["port"]), loop=loop)
+def get_value(digest):
+    connection = yield from aioredis.create_redis(
+       (config.get("redis")["host"], 
+        config.get("redis")["port"]),
+       encoding='utf-8')
+    value = yield from connection.get(digest)
+    connection.close()
+    return value
 
 @asyncio.coroutine
 def get_triple(subject_key, predicate_key, object_key):
-    loop = asyncio.get_event_loop()
-    redis_instance = yield from aioredis.create_redis(
-        (config.get("redis")["host"], 
-         config.get("redis")["port"]), loop=loop)
+    connection = yield from aioredis.create_redis(
+       (config.get("redis")["host"], 
+        config.get("redis")["port"]))
+
     pattern = str()
     for key in [subject_key, predicate_key, object_key]:
         if key is None:
             pattern += "*:"
         else:
-            pattern += "{}:".format(key.decode())
+            pattern += "{}:".format(key)
     pattern = pattern[:-1]
-    if pattern.startswith("*:*:*"):
-        results = yield from redis_instance.scan(0, pattern)
-    else:
-        results = yield from redis_instance.keys(pattern)
-    print(results)
-    redis_instance.close()
+    cur = b'0'
+    results = yield from connection.keys(pattern)
+    results = []
+    while cur:
+        cur, keys = yield from connection.scan(cur, 
+            match=pattern, 
+            count=1000)
+        if len(keys) > 0:
+            results.extend(keys)
+    connection.close()
+    return results
