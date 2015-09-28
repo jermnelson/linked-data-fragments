@@ -32,20 +32,30 @@ local function add_triple(triple_key)
   redis.pcall('set', triple_key, triple_body)
 end
 
+local function add_hash(subject_digest, predicate_digest, object_digest)
+  local subject_key = subject_digest..":predicate-objects"
+  redis.pcall('hset', subject_key, predicate_digest..":"..object_digest, 1)
+  local predicate_key = predicate_digest..":subject-objects"
+  redis.pcall('hset', predicate_key, subject_digest..":"..object_digest, 1)
+  local object_key = object_digest..":subject-predicates"
+  redis.pcall('hset', object_key, subject_digest..":"..predicate_digest, 1)
+end
+
 local subject_sha1 = redis.sha1hex(KEYS[1])
 add(subject_sha1, KEYS[1])
 local predicate_sha1 = redis.sha1hex(KEYS[2])
 add(predicate_sha1, KEYS[2])
 local object_sha1 = redis.sha1hex(KEYS[3])
 add(object_sha1, KEYS[3])
-local key =  subject_sha1..":"..predicate_sha1..":"..object_sha1
-redis.pcall("set", key, 1)
+add_hash(subject_sha1, predicate_sha1, object_sha1)
+return true
 --[[
+local key =  subject_sha1..":"..predicate_sha1..":"..object_sha1
 if redis.pcall("exists", key) then
   return key, redis.pcall("get", key)
 else
   [add_triple(key)
  redis.pcall("set", key, 1)
 end
---]]
 return key
+--]]

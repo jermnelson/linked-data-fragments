@@ -35,6 +35,7 @@ elif config['cache'].startswith("ClusterCache"):
 else:
     from cache import Cache
     CACHE = Cache(**config)
+    print("CACHE is {}".format(CACHE))
 
 
 rest = falcon.API()
@@ -75,6 +76,7 @@ def triple_key(req, resp, params):
         pattern = "{}:*:*".format(hashlib.sha1(str(subj).encode()).hexdigest())
         output = {"subject": str(subj),
                   "predicate-objects": []}
+        cur = 0
         for triple_key in CACHE.datastore.keys(pattern):
             triples = triple_key.decode().split(":")
             output["predicate-objects"].append({"p": CACHE.datastore.get(triples[1]).decode(),
@@ -189,8 +191,6 @@ class Triple:
 
 triple = Triple()
 rest.add_route("/", triple)
-#rest.add_route('/{subj}/{pred}/{obj}', triple)
-#rest.add_route('/{subj}:{pred}:{obj}', triple)
 
 if __name__ == '__main__':
     if config.get('debug'):
