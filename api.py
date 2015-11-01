@@ -3,10 +3,11 @@ __author__ = "Jeremy Nelson"
 
 import digests 
 import falcon
+import hashlib
 import json
 import os
 import rdflib
-
+import requests
 
 try:
     from config import config
@@ -55,13 +56,30 @@ def triple_key(req, resp, params):
             pred,
             obj)
         if triple_str and CACHE.datastore.exists(triple_str):
-            resp.body = json.dumps(CACHE.datastore.get(triple_str))
+            triple_key = triple_str.decode()
+            triple_digests = triple_key.split(":")
+            resp.body = json.dumps(
+                {"key": triple_str.decode(),
+                 "subject_sha1": triple_digests[0],
+                 "predicate_sha1": triple_digests[1],
+                 "object_sha1": triple_digests[2]}
+            )
         elif triple_str:
             resp.body = json.dumps(
                 {"missing-triple-key": triple_str.decode()}
             )
         else:
             raise falcon.HTTPNotFound()
+    # Subject search
+    if subj and not pred and not obj:
+        pattern = "{}:*:*".format(hashlib.sha1(str(subj).encode()).hexdigest())
+        output = {"subject": str(subj),
+                  "predicate-objects": []}
+        for triple_key in CACHE.datastore.keys(pattern):
+            triples = triple_key.decode().split(":")
+            output["predicate-objects"].append({"p": CACHE.datastore.get(triples[1]).decode(),
+                                                "o": CACHE.datastore.get(triples[-1]).decode()})
+        resp.body = json.dumps(output)
 
 def get_triples(pattern):
     cursor = -1
@@ -175,7 +193,6 @@ rest.add_route("/", triple)
 #rest.add_route('/{subj}:{pred}:{obj}', triple)
 
 if __name__ == '__main__':
-    print("Add_get_triple = {}".format(CACHE.add_get_triple))
     if config.get('debug'):
         from werkzeug.serving import run_simple
         run_simple(

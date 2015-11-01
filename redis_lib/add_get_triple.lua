@@ -39,9 +39,13 @@ add(predicate_sha1, KEYS[2])
 local object_sha1 = redis.sha1hex(KEYS[3])
 add(object_sha1, KEYS[3])
 local key =  subject_sha1..":"..predicate_sha1..":"..object_sha1
+redis.pcall("set", key, 1)
+--[[
 if redis.pcall("exists", key) then
   return key, redis.pcall("get", key)
 else
-  add_triple(key)
+  [add_triple(key)
+ redis.pcall("set", key, 1)
 end
+--]]
 return key

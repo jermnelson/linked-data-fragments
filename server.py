@@ -4,6 +4,7 @@ import argparse
 import asyncio
 from aiohttp import web
 import cache.aio as cache
+import json
 import rdflib
 import shlex
 
@@ -42,10 +43,29 @@ def check_add(resource):
 
 @asyncio.coroutine
 def handle_triple(request):
-    subject_key = yield from cache.get_digest(request.match_info.get('s'))
-    predicate_key = yield from cache.get_digest(request.match_info.get('p'))
-    object_key = yield from cache.get_digest(request.match_info.get('o'))
-    yield from cache.get_triple(subject_key, predicate_key, object_key)
+    if request.method.startswith('POST'):
+        data = request.POST
+    elif request.method.startswith('GET'):
+        data = request.GET
+    else:
+        data = {}
+    subject_key = yield from cache.get_digest(data.get('s'))
+    predicate_key = yield from cache.get_digest(data.get('p'))
+    object_key = yield from cache.get_digest(data.get('o'))
+    result = yield from cache.get_triple(subject_key, predicate_key, object_key)
+    output = {"subject": data.get('s'),
+              "predicate-objects": []}
+
+    for triple_key in result:
+        triples = triple_key.decode().split(":")
+        predicate = yield from cache.get_value(triples[1]) 
+        object_ = yield from cache.get_value(triples[-1])
+        output["predicate-objects"].append(
+            {"p": predicate,
+             "o": object_})
+    return web.Response(body=json.dumps(output).encode(),
+                        content_type="application/json")
+
 
 @asyncio.coroutine
 def init_http_server(loop):
