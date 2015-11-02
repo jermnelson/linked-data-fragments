@@ -5,7 +5,42 @@ import hashlib
 import os
 import redis
 
-def add_triple(datastore, subject, predicate, object_):
+# Different strategies for storing triple information in
+# Redis data structures; 
+def hash_pattern(transaction, 
+                 subject_sha1, 
+                 predicate_sha1,
+                 object_sha1):
+    pass
+
+def string_pattern(transaction, 
+                   subject_sha1, 
+                   predicate_sha1,
+                   object_sha1):
+    """The string pattern is the simplest to implement
+    but slow O(n) performance with KEYS and SCAN"""
+    transaction.set("{}:{}:{}".format(
+        subject_sha1,
+        predicate_sha1,
+        object_sha1),
+        1)
+
+def set_pattern(transaction,
+                subject_sha1, 
+                predicate_sha1,
+                object_sha1):
+    transaction.sadd("{}:pred-obj".format(subject_sha1),
+                     "{}:{}".format(predicate_sha1,
+                                    object_sha1))
+    transaction.sadd("{}:subj-obj".format(predicate_sha1),
+                     "{}:{}".format(subject_sha1,
+                                    object_sha1))
+    transaction.sadd("{}:subj-pred".format(object_sha1),
+                     "{}:{}".format(subject_sha1,
+                                    predicate_sha1))
+
+
+def add_triple(datastore, subject, predicate, object_, pattern="string"):
     subject_sha1 = hashlib.sha1(subject.encode()).hexdigest()
     predicate_sha1 = hashlib.sha1(predicate.encode()).hexdigest()
     object_sha1 = hashlib.sha1(object_.encode()).hexdigest()
@@ -13,13 +48,22 @@ def add_triple(datastore, subject, predicate, object_):
     transaction.set(subject_sha1, subject)
     transaction.set(predicate_sha1, predicate)
     transaction.set(object_sha1, object_)
-    transaction.set("{}:{}:{}".format(
-        subject_sha1,
-        predicate_sha1,
-        object_sha1),
-        1)
+    if pattern.startswith("string"):
+        strategy = string_pattern
+    elif pattern.startswith("hash"):
+        strategy = hash_pattern
+    elif pattern.startswith("set"):
+        strategy = set_pattern
+    strategy(transaction,
+             subject_sha1,
+             predicate_sha1,
+             object_sha1)
     transaction.execute()
 
+def remove_expired(datastore, strategy="string"):
+    if strategy.startswith('string'):
+        return
+    expired_pubsub = database.pubsub()
 
 # SPARQL statements
 TRIPLE_SPARQL = """SELECT DISTINCT *
