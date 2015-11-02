@@ -33,12 +33,21 @@ local function add_triple(triple_key)
 end
 
 local function add_hash(subject_digest, predicate_digest, object_digest)
-  local subject_key = subject_digest..":predicate-objects"
+  local subject_key = subject_digest..":pred-obj"
   redis.pcall('hset', subject_key, predicate_digest..":"..object_digest, 1)
-  local predicate_key = predicate_digest..":subject-objects"
+  local predicate_key = predicate_digest..":subj-obj"
   redis.pcall('hset', predicate_key, subject_digest..":"..object_digest, 1)
-  local object_key = object_digest..":subject-predicates"
+  local object_key = object_digest..":subj-pred"
   redis.pcall('hset', object_key, subject_digest..":"..predicate_digest, 1)
+end
+
+local function add_set(subject_digest, predicate_digest, object_digest)
+  local subject_key = subject_digest..":pred-obj"
+  redis.pcall('sadd', subject_key, predicate_sha1..":"..object_digest)
+  local predicate_key = predicate_digest..":subj-obj"
+  redis.pcall('sadd', predicate_key, subject_digest..":"..object_digest)
+  local object_key = object_digest..":subj-pred"
+  redis.pcall('sadd', object_key, subject_digest..":"..predicate_digest)
 end
 
 local subject_sha1 = redis.sha1hex(KEYS[1])
