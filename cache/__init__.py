@@ -60,10 +60,77 @@ def add_triple(datastore, subject, predicate, object_, pattern="string"):
              object_sha1)
     transaction.execute()
 
-def remove_expired(datastore, strategy="string"):
+def remove_expired(**kwargs):
+    datastore = kwargs.get("datastore", redis.StrictRedis())
+    strategy= kwargs.get("strategy", "string")
+    database = kwargs.get('db', 0)
     if strategy.startswith('string'):
         return
-    expired_pubsub = database.pubsub()
+    expired_key_notification = "__keyevent@{}__:expired"
+    expired_pubsub = datastore.pubsub()
+    expired_pubsub.subscribe(expired_key_notification)
+    for item in expired_pubsub.listen():
+        sha1 = item.get("data")
+        transaction = datastore.pipeline(transaction=True)
+        remove_subject(sha1, transaction, datastore)
+        remove_predicate(sha1, transaction, datastore)
+        remove_object(sha1, transaction, datastore)
+        transaction.execute()
+    
+def remove_object(digest, transaction, datastore=redis.StrictRedis()):
+    object_key = "{}:subj-pred".format(digest)
+    if not datastore.exists(object_key):
+        return
+    for row in datastore.smembers(object_key):
+        subject_digest, predicate_digest = row.split(":")
+        subj_pred_obj = "{}:pred-obj".format(subject_digest)
+        if datastore.exists(subj_pred_obj):
+            transaction.srem(
+                subj_pred_obj,
+                "{}:{}".format(predicate_digest, digest))
+        pred_subj_obj = "{}:subj-obj".format(predicate_digest)
+        if datastore.exists(pred_subj_obj):
+            transaction.srem(
+                pred_subj_obj,
+                "{}:{}".format(subject_digest, digest))
+    transaction.delete(object_key)
+
+
+def remove_predicate(digest, transaction, datastore=redis.StrictRedis()):
+    predicate_key = "{}:subj-obj".format(digest)
+    if not datastore.exists(predicate_key):
+        return
+    for row in datastore.smembers(member_key):
+        subject_digest, object_digest = row.split(":")
+        subj_pred_obj = "{}:pred-obj".format(subject_digest)
+        if datastore.exists(subj_pred_obj):
+            transaction.srem(
+                subj_pred_obj,
+                "{}:{}".format(digest, object_digest))
+        obj_subj_pred = "{}:subj-pred".format(object_digest)
+        if datastore.exists(obj_subj_pred):
+            transaction.srem(
+                obj_subj_pred,
+                "{}:{}".format(subject_digest, digest))
+    transaction.delete(predicate_key)
+                
+
+def remove_subject(digest, transaction, datastore=redis.StrictRedis()):
+    subject_key = "{}:pred-obj".format(digest)
+    if not datastore.exists(subject_key):
+        return
+    for row in datastore.smembers(subject_key):
+        predicate, object_ = row.split(":")
+        pred_subj_obj = "{}:subj-obj".format(predicate)
+        if datastore.exists(pred_subj_obj):
+            transaction.srem(pred_subj_obj,
+                             "{}:{}".format(digest, object_))
+        obj_subj_pred = "{}:subj-pred".format(object_)
+        if datastore.exists(obj_subj_pred):
+            transaction.srem(
+                obj_subj_pred,
+                "{}:{}".format(digest, predicate))
+    transaction.delete(subject_key)
 
 # SPARQL statements
 TRIPLE_SPARQL = """SELECT DISTINCT *
