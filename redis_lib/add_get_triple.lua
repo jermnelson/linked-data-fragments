@@ -43,7 +43,7 @@ end
 
 local function add_set(subject_digest, predicate_digest, object_digest)
   local subject_key = subject_digest..":pred-obj"
-  redis.pcall('sadd', subject_key, predicate_sha1..":"..object_digest)
+  redis.pcall('sadd', subject_key, predicate_digest..":"..object_digest)
   local predicate_key = predicate_digest..":subj-obj"
   redis.pcall('sadd', predicate_key, subject_digest..":"..object_digest)
   local object_key = object_digest..":subj-pred"
@@ -56,7 +56,17 @@ local predicate_sha1 = redis.sha1hex(KEYS[2])
 add(predicate_sha1, KEYS[2])
 local object_sha1 = redis.sha1hex(KEYS[3])
 add(object_sha1, KEYS[3])
-add_hash(subject_sha1, predicate_sha1, object_sha1)
+if KEYS[4] then
+  if KEYS[4] == "hash" then
+    add_hash(subject_sha1, predicate_sha1, object_sha1)
+  elseif KEYS[4] == "set" then
+    add_set(subject_sha1, predicate_sha1, object_sha1)
+  else
+    add_string(subject_sha1, predicate_sha1, object_sha1)
+  end
+else
+  add_set(subject_sha1, predicate_sha1, object_sha1)
+end
 return true
 --[[
 local key =  subject_sha1..":"..predicate_sha1..":"..object_sha1
