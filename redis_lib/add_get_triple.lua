@@ -7,7 +7,7 @@ local function add(digest, value)
   --[[if not redis.pcall("exists", digest) then 
      redis.pcall('set', digest, value)      
   end--]]
-  redis.pcall('set', digest, value)
+  redis.pcall('setnx', digest, value)
 end
 
 local function add_triple(triple_key)
