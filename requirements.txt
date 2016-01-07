@@ -1,7 +1,0 @@
-aioredis
-aiohttp
-falcon
-flask
-rdflib
-redis
-requests
