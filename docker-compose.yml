@@ -1,10 +1,18 @@
 ldfs:
   build: .
   links:
-  - redis
+  - redis:redis
+  - semanticServer:semanticServer
 redis:
   images: redis
   ports:
   - "6379:6379"
   volumes:
-  - "/opt/ldfs/data:/data"
+  - /opt/ldfs/data:/data
+semanticServer:
+   images: jermnelson/semantic-server-core:latest
+   ports:
+   - "8080:8080"
+   volumes:
+   - /opt/data/fcrepo4-data:/usr/share/fcrepo4-data
+   - /opt/data/blazegraph:/usr/share/blazegraph
