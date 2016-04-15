@@ -49,6 +49,7 @@ def triple_key(req, resp, params):
     pred = params.get('p', None)
     obj = params.get('o', None)
     triple_str, resp.body = None, None
+    print("In triple key {} {} {}".format(subj, pred, obj))
     if subj and pred and obj:
         triple_str = CACHE.datastore.evalsha(
             CACHE.add_get_triple,
@@ -71,18 +72,100 @@ def triple_key(req, resp, params):
             )
         else:
             raise falcon.HTTPNotFound()
+    output = {"metadata": {"p": "void:triples",
+                           "o": 0 },
+              "data": []}
     # Subject search
-    if subj and not pred and not obj:
-        pattern = "{}:*:*".format(hashlib.sha1(str(subj).encode()).hexdigest())
-        output = {"subject": str(subj),
-                  "predicate-objects": []}
-        cur = 0
-        for triple_key in CACHE.datastore.keys(pattern):
+    if subj and (pred is None or obj is None):
+        print("Before subject key")
+        subject_key = "{}:pred-obj".format(hashlib.sha1(str(subj).encode()).hexdigest())
+        if not pred and not obj:
+            # Retrieve the entire set
+            results = CACHE.datastore.smembers(subject_key)
+        else:
+            if not pred:
+                pattern = "*:{}".format(hashlib.sha1(str(obj).encode()).hexdigest())
+            else:
+                pattern = "{}:*".format(hashlib.sha1(str(pred).encode()).hexdigest())
+            cursor, results = CACHE.datastore.sscan(subject_key, 0, match=pattern)
+            while cursor:
+                cursor, shard_results = CACHE.datastore.sscan(
+                    subject_key,
+                    cursor,
+                    match=pattern)
+                results.extend(shard_results)
+                if len(results) >= 100:
+                    ouput["metadata"]["cursor"] = cursor
+                    break
+        output["metadata"]["o"] = len(results)
+        for triple_key in results:
             triples = triple_key.decode().split(":")
-            output["predicate-objects"].append({"p": CACHE.datastore.get(triples[1]).decode(),
-                                                "o": CACHE.datastore.get(triples[-1]).decode()})
-        resp.body = json.dumps(output)
-
+            output["data"].append({"p": CACHE.datastore.get(triples[0]).decode(),
+                                   "o": CACHE.datastore.get(triples[-1]).decode(),
+                                   "s": subj})
+        
+    if pred and (subj is None or obj is None) and len(output["data"]) < 1:
+        predicate_key = "{}:subj-obj".format(
+            hashlib.sha1(str(pred).encode()).hexdigest())
+        if not obj and not subj:
+            results = CACHE.datastore.smembers(predicate_key)
+        else:
+            if not obj:
+                pattern = "{}:*".format(
+                    hashlib.sha1(str(subj).encode()).hexdigest())
+            else:
+                pattern = "*:{}".format(
+                    hashlib.sha1(str(obj).encode()).hexdigest())
+            cursor, results = CACHE.datastore.sscan(
+                predicate_key,
+                0,
+                match=pattern)
+            while cursor:
+                cursor, shard_results = CACHE.datastore.sscan(
+                    predicate_key,
+                    cursor,
+                    match=pattern)
+                results.extend(shard_results)
+                if len(results) >= 100:
+                    output["metadata"]["cursor"] = cursor
+                    break
+        for triple_key in results:
+            triples = triple_key.decode().split(":")
+            output["data"].append({"p": pred,
+                                   "o": CACHE.datastore.get(triples[-1]).decode(),
+                                   "s": CACHE.datastore.get(triples[0]).decode()})
+    if obj and (subj is None or pred is None) and len(output["data"]) < 1:
+        obj_key = "{}:subj-pred".format(
+            hashlib.sha1(str(obj).encode()).hexdigest())
+        if not subj and not pred:
+            results = CACHE.datastore.smembers(obj_key)
+        else:
+            if not subj:
+                pattern = "*:{}".format(
+                    hashlib.sha1(str(pred).encode()).hexdigest())
+            else:
+                pattern = "{}:*".format(
+                   hashlib.sha1(str(obj).encode()).hexdigest())
+            cursor, results = CACHE.datastore.sscan(
+                obj_key,
+                0,
+                match=pattern)
+            while cursor:
+                cursor, shard_results = CACHE.datastore.sscan(
+                    obj_key,
+                    cursor,
+                    match=pattern)
+                results.extend(shard_results)
+                if len(results) >= 100:
+                    output["metadata"]["cursor"] = cursor
+                    break
+        for triple_key in results:
+            triples = triple_key.decode().split(":")
+            output["data"].append({"p": CACHE.datastore.get(triples[-1]).decode(),
+                                   "o": obj,
+                                   "s": CACHE.datastore.get(triples[0]).decode()})
+    resp.body = json.dumps(output)
+    
 def get_triples(pattern):
     cursor = -1
     output = []
