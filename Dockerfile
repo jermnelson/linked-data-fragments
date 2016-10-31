@@ -1,5 +1,5 @@
 #Dockerfile for Linked Data Fragments Base
-FROM python:3.4.3
+FROM python:3.5.1
 MAINTAINER Jeremy Nelson <jermnelson@gmail.com>
 
 # Set environmental variables
@@ -20,8 +20,7 @@ RUN git clone https://github.com/jermnelson/linked-data-fragments.git $LDFS_HOME
     && git checkout -b development \
     && git pull origin development \
     && pip3 install -r requirements.txt \
-    && cp docker_config.py config.py \
     && touch __init__.py 
    
 WORKDIR $LDFS_HOME
-
+CMD ["nohup", "python", "server.py", "&"]

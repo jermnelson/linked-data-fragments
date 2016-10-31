@@ -1,10 +1,23 @@
 ldfs:
   build: .
+  ports:
+  - 7000:7000
   links:
   - redis
+  - semanticServer
 redis:
-  images: redis
+  image: redis
   ports:
-  - "6379:6379"
+  - 6379:6379
   volumes:
-  - "/opt/ldfs/data:/data"
+  - /opt/ldfs/data:/data
+semanticServer:
+  image: jermnelson/semantic-server-core:dev
+  ports:
+  - 8080:8080
+  - 9999:9999
+  volumes:
+  - /opt/bibcat_repository/fedora-data:/usr/share/fedora-data
+  - /opt/bibcat_triplestore:/usr/share/blazegraph
+
+

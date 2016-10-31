@@ -15,7 +15,7 @@ except ImportError:
 
 LUA_SCRIPTS ={}
 BASE_DIR = os.path.dirname(os.path.abspath(__name__))
-LUA_LOCATION = os.path.join(BASE_DIR, "redis_lib")
+LUA_LOCATION = os.path.join(BASE_DIR, "lib")
 DATASTORE = redis.StrictRedis(host=config.get("redis")["host"],
                               port=config.get("redis")["port"])
 for name in ["add_get_hash", 
