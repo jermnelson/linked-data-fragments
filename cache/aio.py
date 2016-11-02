@@ -18,8 +18,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__name__))
 LUA_LOCATION = os.path.join(BASE_DIR, "lib")
 DATASTORE = redis.StrictRedis(host=config.get("redis")["host"],
                               port=config.get("redis")["port"])
-for name in ["add_get_hash", 
-	     "add_get_triple",
+for name in ["add_get_triple", 
+	     "get_triple",
 	     "triple_pattern_search"]:
     filepath = os.path.join(
 	LUA_LOCATION, "{}.lua".format(name))
