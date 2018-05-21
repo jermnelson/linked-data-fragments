@@ -3,7 +3,6 @@ __author__ = "Jeremy Nelson, Aaron Coburn, Mark Matienzo"
 import argparse
 import asyncio
 from aiohttp import web
-import cache.aio as cache
 import json
 import rdflib
 import shlex
@@ -49,6 +48,7 @@ def handle_triple(request):
         data = request.GET
     else:
         data = {}
+    print("In handle triple")
     subject_key = yield from cache.get_digest(data.get('s'))
     predicate_key = yield from cache.get_digest(data.get('p'))
     object_key = yield from cache.get_digest(data.get('o'))
@@ -123,8 +123,22 @@ if __name__ == '__main__':
         choices=['socket', 'http'],
         default='http',
         help='Run server as either: socket, http, default is http')
+    parser.add_argument(
+        'btree',
+        default=None,
+        help='Run btree file as cache backend')
     args = parser.parse_args()
     loop = asyncio.get_event_loop()
+    if args.btree is not None:
+        import cache.btree as cache
+        from bplustree import BPlusTree, StrSerializer
+        cache.RDF_TREE = BPlusTree(args.btree,
+                   serializer=StrSerializer(),
+                   order=10,
+                   key_size=124)
+    else:
+        import cache.aio as cache
+        
     if args.action.lower().startswith('socket'):
         server = loop.run_until_complete(init_socket_server(loop))
     elif args.action.lower().startswith('http'):

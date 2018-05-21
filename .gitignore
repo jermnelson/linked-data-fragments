@@ -2,3 +2,5 @@
 *.swp
 *.rdb
 *DS_STORE
+.ipynb*
+tmp*

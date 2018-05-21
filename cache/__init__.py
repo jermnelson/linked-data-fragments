@@ -3,7 +3,10 @@ __author__ = "Jeremy Nelson"
 import json
 import hashlib
 import os
-import redis
+try:
+    import redis
+except ImportError:
+    pass
 
 # Different strategies for storing triple information in
 # Redis data structures; 
@@ -77,7 +80,9 @@ def remove_expired(**kwargs):
         remove_object(sha1, transaction, datastore)
         transaction.execute()
     
-def remove_object(digest, transaction, datastore=redis.StrictRedis()):
+def remove_object(digest, transaction, datastore=None):
+    if not datastore:
+        datastore = redis.StrictRedis()
     object_key = "{}:subj-pred".format(digest)
     if not datastore.exists(object_key):
         return
@@ -96,7 +101,9 @@ def remove_object(digest, transaction, datastore=redis.StrictRedis()):
     transaction.delete(object_key)
 
 
-def remove_predicate(digest, transaction, datastore=redis.StrictRedis()):
+def remove_predicate(digest, transaction, datastore=None):
+    if not datastore:
+        datastore = redis.StrictRedis()
     predicate_key = "{}:subj-obj".format(digest)
     if not datastore.exists(predicate_key):
         return
@@ -115,7 +122,7 @@ def remove_predicate(digest, transaction, datastore=redis.StrictRedis()):
     transaction.delete(predicate_key)
                 
 
-def remove_subject(digest, transaction, datastore=redis.StrictRedis()):
+def remove_subject(digest, transaction, datastore=None):
     subject_key = "{}:pred-obj".format(digest)
     if not datastore.exists(subject_key):
         return

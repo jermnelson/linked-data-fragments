@@ -1,34 +1,38 @@
-__author__ = "Jeremy Nelson, Aaron Coburn, Mark Matienzo"
+__author__ = ("Jeremy Nelson", "Aaron Coburn", "Mark Matienzo")
 
 import asyncio
-import aioredis
 import hashlib
 import os
-import redis
+BASE_DIR = os.path.dirname(os.path.abspath(__name__))
 try:
-    import config
-except ImportError:
+    import redis
+    import aioredis
     config = {"redis": {"host": "localhost",
                         "port": 6379,
                         "ttl": 604800
                         }}
 
-LUA_SCRIPTS ={}
-BASE_DIR = os.path.dirname(os.path.abspath(__name__))
-LUA_LOCATION = os.path.join(BASE_DIR, "lib")
-DATASTORE = redis.StrictRedis(host=config.get("redis")["host"],
-                              port=config.get("redis")["port"])
-for name in ["add_get_triple", 
+    LUA_SCRIPTS ={}
+    LUA_LOCATION = os.path.join(BASE_DIR, "lib")
+
+
+    DATASTORE = redis.StrictRedis(host=config.get("redis")["host"],
+                                port=config.get("redis")["port"])
+
+    for name in ["add_get_triple", 
 	     "get_triple",
 	     "triple_pattern_search"]:
-    filepath = os.path.join(
-	LUA_LOCATION, "{}.lua".format(name))
-    with open(filepath) as fo:
-        lua_script = fo.read()
-    sha1 = DATASTORE.script_load(lua_script)
-    LUA_SCRIPTS[name] = sha1
+        filepath = os.path.join(
+	    LUA_LOCATION, "{}.lua".format(name))
+        with open(filepath) as fo:
+            lua_script = fo.read()
+        sha1 = DATASTORE.script_load(lua_script)
+        LUA_SCRIPTS[name] = sha1
+except ImportError:
+    # Tries BTree backend
+    
 
-@asyncio.coroutine
+asyncio.coroutine
 def get_digest(value):
     """Get digest takes either an URI/URL or a Literal value and 
     calls the SHA1 for the add_get_hash.lua script.
