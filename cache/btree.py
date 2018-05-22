@@ -38,33 +38,17 @@ def get_triple(subject_key, predicate_key, object_key):
         list of triples
     """
     results = []
-    if subject_key == "*":
-        predicate_subjects_pattern = "{}:subj-obj".format(
-            predicate_key)
-        for row in pickle.loads(RDF_TREE.get(predicate_subjects_pattern, [])):
-            subject_sha1, object_sha1 = row.split(":")
-            results.append({"s": RDF_TREE.get(subject_sha1),
-                            "p": RDF_TREE.get(predicate_key),
-                            "o": RDF_TREE.get(object_sha1)})
-
-        object_subjects_pattern = "{}:subj-pred".format(
-            object_key)
-        for row in pickle.loads(RDF_TREE.get(object_subjects_pattern, [])):
-            subject_sha1, predicate_sha1 = row.split(":")
-            results.append({"s": RDF_TREE.get(subject_sha1),
-                            "p": RDF_TREE.get(predicate_sha1),
-                            "o": RDF_TREE.get(object_key)})
-        results.extend(pickle.loads(RDF_TREE.get(object_subjects_pattern, [])))
-    elif predicate_key == "*":
-        pass
-    elif object_key == "*":
-        pass
+    
     else:
         results.append({"s": RDF_TREE.get(subject_key),
                         "p": RDF_TREE.get(predicate_key),
                         "o": RDF_TREE.get(object_key)})
     return results
 
+@asyncio.coroutine
+def get_value(digest):
+    if RDF_TREE:
+        return RDF_TREE.get(digest)
 
 def add_patterns(btree,
     subject_sha1,
@@ -82,23 +66,22 @@ def add_patterns(btree,
     Returns:
         boolean
     """
-    def __add_pickle_list__(key, value):
-        """Helper function"""
-        if key in btree:
-            pickle_list = pickle.loads(btree.get(key))
-            pickle_list.append(value)
-        else:
-            pickle_list = [value,]
-        pickle_list = list(set(pickle_list))
-        btree[key] = pickle.dumps(pickle_list)
-    key = "{}:{}:{}".format(subject_sha1, predicate_sha1, object_sha1)
-    if not key in btree:
-        btree.insert(key, b"1")
-    __add_pickle_list__("{}:pred-obj".format(subject_sha1),
-                        "{}:{}".format(predicate_sha1, object_sha1))
-    __add_pickle_list__("{}:subj-obj".format(predicate_sha1),
-                        "{}:{}".format(subject_sha1,object_sha1))
-    __add_pickle_list__("{}:subj-pred".format(object_sha1),
-                        "{}:{}".format(subject_sha1,
-                                    predicate_sha1))
+    triple_key = "{}>{}>{}".format(subject_sha1,
+                                   predicate_sha1,
+                                   object_sha1)
+    if not triple_key in btree:
+        btree.insert(triple_key, b'1')
+    predicate_path_key = "{}>{}.{}".format(
+        predicate_sha1,
+        object_sha1,
+        subject_sha1)
+    if not predicate_path_key in btree:
+        btree.insert(predicate_path_key, b'1')
+    object_path_key = "{}.{}>{}".format(
+        object_sha1,
+        subject_sha1,
+        predicate_sha1)
+    if not object_path_key in btree:
+        btree.insert(object_path_key, b'1')
     return True
+ 

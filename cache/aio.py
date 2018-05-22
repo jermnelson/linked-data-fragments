@@ -32,7 +32,7 @@ except ImportError:
     # Tries BTree backend
     
 
-asyncio.coroutine
+@asyncio.coroutine
 def get_digest(value):
     """Get digest takes either an URI/URL or a Literal value and 
     calls the SHA1 for the add_get_hash.lua script.
