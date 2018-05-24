@@ -14,9 +14,6 @@ try:
 except ImportError:
     config = {"debug": True,
               "cache": "Cache",
-              "redis": {"host": "localhost",
-		        "port": 6379,
-		        "ttl": 604800},
               "rest_api": {"host": "localhost",
                            "port": 18150},
               # Blazegraph SPARQL Endpoint
@@ -25,18 +22,6 @@ except ImportError:
                               "path": "bigdata"},
               
     }
-
-if config['cache'].startswith("TwemproxyCache"):
-    from cache.twemproxy import TwemproxyCache
-    CACHE = TwemproxyCache(**config)
-elif config['cache'].startswith("ClusterCache"):
-    from cache.cluster import ClusterCache
-    CACHE = ClusterCache(**config)
-else:
-    from cache import Cache
-    CACHE = Cache(**config)
-    print("CACHE is {}".format(CACHE))
-
 
 rest = falcon.API()
 

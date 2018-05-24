@@ -4,3 +4,7 @@
 *DS_STORE
 .ipynb*
 tmp*
+build/
+dist/
+*.egg-info*
+__pycache__*

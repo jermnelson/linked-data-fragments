@@ -91,5 +91,39 @@ class Test_add_entry(unittest.TestCase):
         self.entity_tree.close()
         os.remove(self.filepath)
 
+class Test_add_patterns(unittest.TestCase):
+
+    def setUp(self):
+        self.filepath = os.path.join(PROJECT_DIR, "test-tree.db")
+        self.triples_tree = BPlusTree(
+            self.filepath,
+            order=25,
+            serializer=StrSerializer(),
+            key_size=124)
+
+    def test_wrong_sha1_types(self):
+
+        self.assertRaises(TypeError,
+            self.triples_tree,
+            1,
+            str(),
+            str())
+
+        self.assertRaises(TypeError,
+            self.triples_tree,
+            str(),
+            1,
+            str())
+
+        self.assertRaises(TypeError,
+            self.triples_tree,
+            str(),
+            str(),
+            1)
+
+    def tearDown(self):
+        self.triples_tree.close()
+        os.remove(self.filepath)
+
 if __name__ == '__main__':
     unittest.main()
