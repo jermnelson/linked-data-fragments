@@ -109,6 +109,8 @@ def add_patterns(triples_tree,
     return True
 
 class TriplePatternSelector(object):
+    """Provides pattern matching for Linked Data Fragments using a BTree
+    data file stored on disk"""
     
     def __init__(self, **kwargs):
         self.subject_selector = kwargs.get("subject")
@@ -120,6 +122,7 @@ class TriplePatternSelector(object):
         self.object_selector = kwargs.get("object")
         if not self.object_selector:
             self.object_selector = "?object"
+        self.limit = kwargs.get("limit", 1000)
         self.db_path = kwargs.get("db_tree_path")
         self.db_tree = None
         if self.db_path:
@@ -206,6 +209,8 @@ class TriplePatternSelector(object):
             return self.db_tree.get(digest).decode()
 
     def __all_matcher__(self):
+        if len(self.data) >= self.limit:
+            return
         # Matches all triples
         for row in self.db_tree:
             match_triples = TRIPLE_RE.match(row)
@@ -227,6 +232,8 @@ class TriplePatternSelector(object):
             entity_key(str): SHA1 of entity
             match_re(re): Complied regular expression
         """
+        if len(self.data) >= self.limit:
+            return
         for row in self.db_tree[entity_key:]:
             if not row.startswith(entity_key):
                 break
