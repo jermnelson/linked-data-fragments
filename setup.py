@@ -3,7 +3,7 @@ __author__ = "Jeremy Nelson"
 from setuptools import setup, find_packages
 
 setup(
-    name="ld_fragments",
+    name="ldf_server",
     version="0.0.1",
     author="Jeremy Nelson",
     license="GNU AFFERO",
