@@ -192,7 +192,7 @@ class TriplePatternSelector(object):
                     object_key)
                 self.__key_matcher__(match_key, PRED_RE)
             elif predicate_key is not None:
-                self.__key_matcher__(object_key, PRED_RE)
+                self.__key_matcher__(predicate_key, PRED_RE)
             elif object_key is not None:
                 self.__key_matcher__(object_key, OBJECT_RE)
             else:         
@@ -232,9 +232,9 @@ class TriplePatternSelector(object):
             entity_key(str): SHA1 of entity
             match_re(re): Complied regular expression
         """
-        if len(self.data) >= self.limit:
-            return
         for row in self.db_tree[entity_key:]:
+            if len(self.data) >= self.limit:
+                return
             if not row.startswith(entity_key):
                 break
             match_obj = match_re.match(row)
