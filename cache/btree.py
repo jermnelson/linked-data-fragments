@@ -11,9 +11,9 @@ import urllib.parse
 import rdflib
 from bplustree import BPlusTree, StrSerializer
 
-OBJECT_RE = re.compile(r"(\w+)\.(\w+)>(\w+)")
-PRED_RE = re.compile(r"(\w+)>(\w+).(\w+)")
-TRIPLE_RE = re.compile(r"(\w+)>(\w+)>(\w+)")
+OBJECT_RE = re.compile(r"(?P<o>\w+)\.(?P<s>\w+)>(?P<p>\w+)")
+PRED_RE = re.compile(r"(?P<p>\w+)>(?P<o>\w+).(?P<s>\w+)")
+TRIPLE_RE = re.compile(r"(?P<s>\w+)>(?P<p>\w+)>(?P<o>\w+)")
 
 
 def add_entity(entity_tree: BPlusTree, 
@@ -216,11 +216,10 @@ class TriplePatternSelector(object):
             match_triples = TRIPLE_RE.match(row)
             if not match_triples:
                 continue
-            groups = match_triples.groups()
             self.data.append({
-                "s": self.get(groups[0]),
-                "p": self.get(groups[1]),
-                "o": self.get(groups[2])
+                "s": self.get(match_triples.group('s')),
+                "p": self.get(match_triples.group('p')),
+                "o": self.get(match_triples.group('o'))
              })
 
     def __key_matcher__(self, 
@@ -240,9 +239,8 @@ class TriplePatternSelector(object):
             match_obj = match_re.match(row)
             if not match_obj:
                 continue
-            groups = match_obj.groups()
             self.data.append({
-                "s": self.get(groups[1]),
-                "p": self.get(groups[2]),
-                "o": self.object_selector
+                "s": self.get(match_obj.group('s')),
+                "p": self.get(match_obj.group('p')),
+                "o": self.get(match_obj.group('o'))
              })

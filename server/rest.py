@@ -31,11 +31,10 @@ rest = falcon.API()
 def triple_key(req, resp, params):
     if len(params) < 1:
         params = req.params
-    click.echo(req)
     subj = params.get('s', None)
     pred = params.get('p', None)
     obj = params.get('o', None)
-    click.echo("In triple key hook {} {} {}".format(subj, pred, obj))
+    #click.echo("In triple key hook {} {} {}".format(subj, pred, obj))
     triple_patterns = btree.TriplePatternSelector(
         db_tree_path=config["DATA_PATH"],
         subject=subj,
@@ -94,7 +93,6 @@ class Triple:
 
     @falcon.before(triple_key)
     def on_get(self, req, resp):
-        click.echo("IN TRIPLE {}".format(req.params))
         #if not resp.body:
             # Should search SPARQL endpoint and add to cache
             # if found
